@@ -1,0 +1,77 @@
+[tool.poetry]
+name = "bramm-data-analysis"
+version = "0.1.0"
+description = ""
+authors = ["Gaétan Rigaut <gaetanrigaut.s@gmail.com>"]
+# Use identifier from https://spdx.org/licenses/
+license = "MIT license"
+readme = "README.md"
+
+packages = [{ include = "bramm_data_analysis", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11, <3.13"
+pandas = "^2.1.2"
+numpy = "^1.26.1"
+openpyxl = "^3.1.2"
+matplotlib = "^3.8.0"
+
+
+[tool.poetry.group.dev.dependencies]
+black = {extras = ["jupyter"], version = "*"}
+ruff = "*"
+mypy = "*"
+pre-commit = "*"
+pre-commit-hooks = "*"
+ipykernel = "*"
+nbstripout = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+target-version = ['py311']
+line-length = 79
+
+[tool.ruff]
+line-length = 79
+target-version = "py311"
+select = ["ALL"]
+ignore = [
+    #no-blank-line-before-class
+    "D211",
+    #multi-line-summary-second-line
+    "D213",
+    # flake8-boolean-trap
+    "FBT",
+    # bandit
+    "S",
+    # flake8-logging
+    "G",
+    # flake8-print
+    "T",
+    # McCabe complexity
+    "C901",
+    # do not assign a lambda expression, use a def
+    "E731",
+    # Too many arguments to function call
+    "PLR0913",
+    # Missing type annotation for `self` in method
+    "ANN101",
+    # suppressible-exception
+    "SIM105",
+    "INP001",
+]
+unfixable = [
+    # Remove unused-imports
+    "F401",
+    # Variable assigned but never used
+    "F841",
+    # Use {key} in {dict} instead of {key} in {dict}.keys()
+    "SIM118",
+    # move to type-checking block
+    "TCH003",
+    # found comented-out code
+    "ERA001",
+]
