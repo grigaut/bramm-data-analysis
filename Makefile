@@ -101,7 +101,7 @@ poetry-install:
 requirements.txt: poetry.lock
 	@${MAKE} -s _starting-task-message message="Exporting Dependencies to requirements.txt..."
 	@${MAKE} -s check-poetry
-	@${GLOBAL_POETRY} export -f requirements.txt -o requirements.txt --with dev,docs --without-hashes
+	@${GLOBAL_POETRY} export -f requirements.txt -o requirements.txt --without-hashes
 	@${MAKE} -s _completed-task-message message="Successful Export"
 
 .PHONY: poetry-export

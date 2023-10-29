@@ -39,6 +39,8 @@ line-length = 79
 target-version = "py311"
 select = ["ALL"]
 ignore = [
+    # missing-trailing-comma (COM812)
+    "COM812",
     #no-blank-line-before-class
     "D211",
     #multi-line-summary-second-line
@@ -55,13 +57,16 @@ ignore = [
     "C901",
     # do not assign a lambda expression, use a def
     "E731",
+    # implicit-namespace-package
+    "INP001",
+    # single-line-implicit-string-concatenation
+    "ISC001",
     # Too many arguments to function call
     "PLR0913",
     # Missing type annotation for `self` in method
     "ANN101",
     # suppressible-exception
     "SIM105",
-    "INP001",
 ]
 unfixable = [
     # Remove unused-imports

@@ -51,11 +51,22 @@ repos:
         description: "Run 'ruff' for extremely fast Python linting"
         entry: ruff check --force-exclude
         language: python
-        'types_or': [python, pyi]
+        types_or: [python, pyi]
         args: []
         require_serial: true
         additional_dependencies: []
-        minimum_pre_commit_version: '2.9.2'
+        minimum_pre_commit_version: "2.9.2"
+
+      - id: ruff-format
+        name: ruff-format
+        description: "Run 'ruff format' for extremely fast Python formatting"
+        entry: ruff format --force-exclude
+        language: python
+        types_or: [python, pyi]
+        args: []
+        require_serial: true
+        additional_dependencies: []
+        minimum_pre_commit_version: "2.9.2"
 
       - id: poetry-check
         name: poetry-check
@@ -72,4 +83,4 @@ repos:
         language: python
         pass_filenames: false
         files: ^(.*/)?poetry\.lock$
-        args: ["-f", "requirements.txt", "-o", "requirements.txt"]
+        args: ["-f", "requirements.txt", "-o", "requirements.txt", "--without-hashes"]
