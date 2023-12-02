@@ -42,7 +42,7 @@ line-length = 79
 [tool.ruff]
 line-length = 79
 target-version = "py311"
-file-exclude = [".ipynb"]
+extend-exclude = ["*.ipynb"]
 select = ["ALL"]
 ignore = [
     # missing-trailing-comma (COM812)
