@@ -14,12 +14,13 @@ class Matcher:
     rmqs_suffix = "_rmqs"
     distance_column = "distance"
     rmqs_date_column = "date_complete"
+    _earth_radius_km = 6371
 
     def __init__(
         self,
         *,
         year_threshold: int = 2000,
-        distance_threshold: float = 1,
+        km_threshold: float = 1,
     ) -> None:
         """Instanciate Matcher object.
 
@@ -28,11 +29,16 @@ class Matcher:
         year_threshold : int, optional
             Date Threshold to verify for RMQS data.,
             by default datetime(2000, 1, 1, tzinfo=UTC)
-        distance_threshold : float, optional
-            Maximum accepted distance for closest point., by default 1
+        km_threshold : float, optional
+            Maximum accepted distance for closest point in km., by default 1
         """
         self.year_threshold = year_threshold
-        self.distance_threshold = distance_threshold
+        self.km_threshold = km_threshold
+
+    @property
+    def rad_threshold(self) -> float:
+        """Distance Threshold in Radians."""
+        return self.km_threshold / self._earth_radius_km
 
     @staticmethod
     def convert_to_radians(degree_dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -132,10 +138,9 @@ class Matcher:
             suffixes=suffixes,
         )
         merged[self.distance_column] = distances
-        print(distances)
         return merged
 
-    def _apply_distance_threshold(
+    def _apply_km_threshold(
         self,
         matched_data: pd.DataFrame,
         distance_column: str,
@@ -157,7 +162,7 @@ class Matcher:
         """
         distances = matched_data.pop(distance_column)
 
-        is_lower_than_threshold = distances <= self.distance_threshold
+        is_lower_than_threshold = distances <= self.rad_threshold
 
         return matched_data[is_lower_than_threshold]
 
@@ -214,7 +219,7 @@ class Matcher:
             suffixes=(self.moss_suffix, self.rmqs_suffix),
         )
 
-        return self._apply_distance_threshold(
+        return self._apply_km_threshold(
             matched_data=matched,
             distance_column=self.distance_column,
         )
@@ -272,7 +277,7 @@ class Matcher:
             suffixes=(self.moss_suffix, self.rmqs_suffix),
         )
 
-        return self._apply_distance_threshold(
+        return self._apply_km_threshold(
             matched_data=matched,
             distance_column=self.distance_column,
         )
