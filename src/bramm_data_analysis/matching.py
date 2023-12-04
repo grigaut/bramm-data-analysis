@@ -1,5 +1,6 @@
 """Matching Tools to Match Moss Points with RMQS Points.."""
 
+import numpy as np
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
@@ -33,6 +34,22 @@ class Matcher:
         self.year_threshold = year_threshold
         self.distance_threshold = distance_threshold
 
+    @staticmethod
+    def convert_to_radians(degree_dataframe: pd.DataFrame) -> pd.DataFrame:
+        """Convert a DataFrame in Degree into a DataFrame in Radian.
+
+        Parameters
+        ----------
+        degree_dataframe : pd.DataFrame
+            DataFrame whose values are all in degree.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame whose values are all in radians.
+        """
+        return np.deg2rad(degree_dataframe)
+
     def _apply_year_threshold(
         self,
         rmqs_data: pd.DataFrame,
@@ -62,6 +79,7 @@ class Matcher:
         self,
         left_data: pd.DataFrame,
         right_data: pd.DataFrame,
+        radians: bool,
         *,
         left_longitude: str = "longitude",
         left_latitude: str = "latitude",
@@ -77,6 +95,8 @@ class Matcher:
             Left DataFrame.
         right_data : pd.DataFrame
             Right DataFrame.
+        radians: bool
+            Whether the provided Data is in radians or not.
         left_longitude : str, optional
             Longitude column for the left DataFrame., by default "longitude"
         left_latitude : str, optional
@@ -94,8 +114,11 @@ class Matcher:
             Matched DataFrame of right onto left.
         """
         # Slice to conserve only coordinates.
-        left_xy = left_data[[left_longitude, left_latitude]]
-        right_xy = right_data[[right_longitude, right_latitude]]
+        left_xy = left_data.filter([left_longitude, left_latitude])
+        right_xy = right_data.filter([right_longitude, right_latitude])
+        if not radians:
+            left_xy = Matcher.convert_to_radians(left_xy)
+            right_xy = Matcher.convert_to_radians(right_xy)
 
         # Estimator fitting
         estimator = NearestNeighbors(n_neighbors=1, metric=self.metric)
@@ -109,6 +132,7 @@ class Matcher:
             suffixes=suffixes,
         )
         merged[self.distance_column] = distances
+        print(distances)
         return merged
 
     def _apply_distance_threshold(
@@ -141,6 +165,7 @@ class Matcher:
         self,
         moss_data: pd.DataFrame,
         rmqs_data: pd.DataFrame,
+        radians: bool = False,
         *,
         moss_longitude: str = "longitude",
         moss_latitude: str = "latitude",
@@ -157,6 +182,8 @@ class Matcher:
             DataFrame containing Moss Data.
         rmqs_data : pd.DataFrame
             DataFrame containing RMQS Data.
+        radians: bool
+            Whether the provided Data is in radians or not.by default False
         moss_longitude : str, optional
             Label for longitude in moss DataFrame., by default "longitude"
         moss_latitude : str, optional
@@ -179,6 +206,7 @@ class Matcher:
         matched = self.right_to_left(
             left_data=moss_data,
             right_data=rmqs_sliced,
+            radians=radians,
             left_longitude=moss_longitude,
             left_latitude=moss_latitude,
             right_longitude=rmqs_longitude,
@@ -195,6 +223,7 @@ class Matcher:
         self,
         moss_data: pd.DataFrame,
         rmqs_data: pd.DataFrame,
+        radians: bool = True,
         *,
         moss_longitude: str = "longitude",
         moss_latitude: str = "latitude",
@@ -211,6 +240,8 @@ class Matcher:
             DataFrame containing Moss Data.
         rmqs_data : pd.DataFrame
             DataFrame containing RMQS Data.
+        radians: bool
+            Whether the provided Data is in radians or not.by default False
         moss_longitude : str, optional
             Label for longitude in moss DataFrame., by default "longitude"
         moss_latitude : str, optional
@@ -233,6 +264,7 @@ class Matcher:
         matched = self.right_to_left(
             right_data=moss_data,
             left_data=rmqs_sliced,
+            radians=radians,
             right_longitude=moss_longitude,
             right_latitude=moss_latitude,
             left_longitude=rmqs_longitude,
