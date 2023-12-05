@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import gstlearn as gl
 import gstlearn.plot as gp
+import matplotlib.pyplot as plt
 import pandas as pd
 
 if TYPE_CHECKING:
@@ -51,8 +52,8 @@ class CorrelationEvaluation:
         """DataFrame."""
         return self._df
 
-    def plot_correlation(self, *, z1: str, z2: str) -> None:
-        """Plot Correlation Plot between variables z1 and z2.
+    def compute_correlation(self, *, z1: str, z2: str) -> "Axes":
+        """Compute Correlation Plot between variables z1 and z2.
 
         Parameters
         ----------
@@ -73,4 +74,20 @@ class CorrelationEvaluation:
             regrLine=True,
         )
         ax.decoration(title=f"Correlation between {z1} and {z2}")
-        ax.plot()
+        return ax
+
+    def show_correlation(self, *, z1: str, z2: str) -> None:
+        """Show Correlation Plot between variables z1 and z2.
+
+        Parameters
+        ----------
+        z1 : str
+            First variable (x-axis).
+        z2 : str
+            Second Variable (y-axis).
+        """
+        ax = self.compute_correlation(
+            z1=z1,
+            z2=z2,
+        )
+        plt.show(ax)
