@@ -27,18 +27,18 @@ class RegularGrid:
         """
         self._boundary = boundary
 
-    def divise_area(self, step: float) -> pd.DataFrame:
-        """Divise the area within the boundary on points separated by step.
+    def _mesh(self, step: float) -> gpd.GeoDataFrame:
+        """Generate points all around the boundary, separated by given step.
 
         Parameters
         ----------
         step : float
-            Division length between points.
+            Spacing between consecutive points.
 
         Returns
         -------
-        pd.DataFrame
-            DataFrame containing all points within the boundaries.
+        gpd.GeoDataFrame
+            GeoDataFrame containing all points within the boundary.
         """
         x_points = np.arange(
             start=self._boundary.lon_rmin,
@@ -51,18 +51,82 @@ class RegularGrid:
             step=step,
         )[::-1]
         x_2d, y_2d = np.meshgrid(x_points, y_points)
-        locations = pd.DataFrame(
+        return pd.DataFrame(
             data={
                 self.x_field: x_2d.ravel(),
                 self.y_field: y_2d.ravel(),
             }
         )
+
+    def _filter(self, locations: pd.DataFrame) -> pd.DataFrame:
+        """Filter a dataframe of points.
+
+        Parameters
+        ----------
+        locations : pd.DataFrame
+            Points to filter.
+
+        Returns
+        -------
+        pd.DataFrame
+            Points within the boundaries.
+        """
         geometry = gpd.points_from_xy(
             x=locations[self.x_field],
             y=locations[self.y_field],
         )
         is_inside = geometry.within(self._boundary.polygon)
-        return locations[is_inside]
+        return gpd.GeoDataFrame(data=locations, geometry=geometry)[is_inside]
+
+    def _divise_area(self, step: float) -> gpd.GeoDataFrame:
+        """Compute points within the boundary separated by a given spacing.
+
+        Parameters
+        ----------
+        step : float
+            Spacing between consecutive points.
+
+        Returns
+        -------
+        gpd.GeoDataFrame
+            GeoDataFrame containing all points within the boundary.
+        """
+        locations = self._mesh(step=step)
+        return self._filter(locations=locations)
+
+    def save_insiders(self, step: float, output_path: Path) -> None:
+        """Save inside points in a json file.
+
+        Parameters
+        ----------
+        step : float
+            Spacing between consecutive points.
+        output_path : Path
+            Path to the json file in which to save the points.
+        """
+        insiders = self._divise_area(step=step)
+        insiders.geometry.to_file(output_path, driver="GeoJSON")
+
+    def retrieve_insiders(self, step: float) -> pd.DataFrame:
+        """Retrieve points within the boundary separated by a given spacing.
+
+        Parameters
+        ----------
+        step : float
+            Spacing between consecutive points.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame of points within the boundary.
+        """
+        insiders = self._divise_area(step=step)
+        return pd.DataFrame(
+            data={
+                self.x_field: insiders[self.x_field],
+                self.y_field: insiders[self.y_field],
+            }
+        )
 
     @classmethod
     def from_boundary_path(
@@ -82,4 +146,17 @@ class RegularGrid:
         """
         return cls(
             boundary=Boundary(boundary_geojson_path=boundary_geojson_path),
+        )
+
+    @classmethod
+    def read_json(
+        cls: type["RegularGrid"], geojson_path: Path
+    ) -> pd.DataFrame:
+        """Read a geojson file to return the grid."""
+        geometry = gpd.read_file(geojson_path).geometry
+        return pd.DataFrame(
+            data={
+                cls.x_field: geometry.x,
+                cls.y_field: geometry.y,
+            }
         )
