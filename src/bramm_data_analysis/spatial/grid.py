@@ -27,6 +27,11 @@ class RegularGrid:
         """
         self._boundary = boundary
 
+    @property
+    def boundary(self) -> Boundary:
+        """Boundary Object."""
+        return self._boundary
+
     def _mesh(self, step: float) -> gpd.GeoDataFrame:
         """Generate points all around the boundary, separated by given step.
 
