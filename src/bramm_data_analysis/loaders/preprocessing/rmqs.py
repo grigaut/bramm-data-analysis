@@ -1,12 +1,11 @@
 """RMQS Preprocessing Tools."""
 
 
-from pathlib import Path
 from typing import Literal, overload
 
 import pandas as pd
 
-from bramm_data_analysis.loading.preprocessing._base import Preprocessor
+from bramm_data_analysis.loaders.preprocessing._base import Preprocessor
 
 
 class RMQSPreprocessor(Preprocessor):
@@ -15,19 +14,8 @@ class RMQSPreprocessor(Preprocessor):
 
     date_column_to_convert = "date_complete"
 
-    def __init__(self, data_path: Path) -> None:
-        """Instanciates the preprocessor."""
-        super().__init__(data_path)
-
-    def load(self) -> pd.DataFrame:
-        """Load the DataFrame.
-
-        Returns
-        -------
-        pd.DataFrame
-            Loaded Data.
-        """
-        return pd.read_csv(self._data)
+    def __init__(self) -> None:
+        """Instantiate the Preprocessor."""
 
     @overload
     def preprocess(
