@@ -7,6 +7,8 @@ from gstlearn import Db
 from pandas.core.api import DataFrame
 
 from bramm_data_analysis.loaders.df_to_db.converters import DF2Db
+from bramm_data_analysis.loaders.preprocessing._base import BasePreprocessor
+from bramm_data_analysis.loaders.reading._base import BaseReader
 
 T = TypeVar("T")
 
@@ -18,7 +20,10 @@ class BaseLoader(ABC, Generic[T]):
     date_field = "date"
     longitude_field = "longitude"
     latitude_field = "latitude"
+    _reader: BaseReader
+    _preprocessor: BasePreprocessor
 
+    @abstractmethod
     def __init__(self, source: T) -> None:
         """Instantiate the Loader.
 
@@ -54,7 +59,6 @@ class BaseLoader(ABC, Generic[T]):
             msg = "One of the essential columns are missing in the dataframe."
             raise KeyError(msg)
 
-    @abstractmethod
     def retrieve_filtered_df(self, fields: list[str]) -> DataFrame:
         """Retrieve Filtered DataFrame.
 
@@ -68,10 +72,21 @@ class BaseLoader(ABC, Generic[T]):
         DataFrame
             Filtered DataFrame
         """
+        datafarme = self._reader.retrieve_and_filter(fields)
+        self.raise_if_essential_columns_missing(datafarme)
+        return self._preprocessor.preprocess(
+            unprocessed_data=datafarme,
+            inplace=False,
+        )
 
-    @abstractmethod
-    def retrieve_df(self, fields: list[str]) -> DataFrame:
+    def retrieve_df(self) -> DataFrame:
         """Retrieve the original DataFrame."""
+        dataframe = self._reader.retrieve()
+        self.raise_if_essential_columns_missing(dataframe)
+        return self._preprocessor.preprocess(
+            unprocessed_data=dataframe,
+            inplace=False,
+        )
 
     def retrieve_db(self, *, xs: list[str], zs: list[str]) -> Db:
         """Retrieve the DataBase.
