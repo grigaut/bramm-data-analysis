@@ -6,7 +6,7 @@ from typing import Literal, overload
 import pandas as pd
 
 
-class Preprocessor(ABC):
+class BasePreprocessor(ABC):
 
     """Preprocessing base class."""
 

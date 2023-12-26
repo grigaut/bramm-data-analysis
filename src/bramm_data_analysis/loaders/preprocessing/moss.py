@@ -4,10 +4,10 @@ from typing import ClassVar, Literal, overload
 
 import pandas as pd
 
-from bramm_data_analysis.loaders.preprocessing._base import Preprocessor
+from bramm_data_analysis.loaders.preprocessing._base import BasePreprocessor
 
 
-class MossPreprocessor(Preprocessor):
+class MossPreprocessor(BasePreprocessor):
 
     """Preprocessor for Moss Data."""
 

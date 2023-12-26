@@ -5,10 +5,10 @@ from typing import Literal, overload
 
 import pandas as pd
 
-from bramm_data_analysis.loaders.preprocessing._base import Preprocessor
+from bramm_data_analysis.loaders.preprocessing._base import BasePreprocessor
 
 
-class RMQSPreprocessor(Preprocessor):
+class RMQSPreprocessor(BasePreprocessor):
 
     """Preprocessor for RMQS Data."""
 
