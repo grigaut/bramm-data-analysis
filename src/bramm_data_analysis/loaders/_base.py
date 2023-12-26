@@ -15,8 +15,18 @@ class BaseLoader(ABC, Generic[T]):
 
     """Base class for Loaders."""
 
+    date_field = "date"
+    longitude_field = "longitude"
+    latitude_field = "latitude"
+
     def __init__(self, source: T) -> None:
-        """Instantiate the Loader."""
+        """Instantiate the Loader.
+
+        Parameters
+        ----------
+        source : T
+            Source object.
+        """
         self._source = source
 
     @property
@@ -24,8 +34,43 @@ class BaseLoader(ABC, Generic[T]):
         """Data Path."""
         return self._source
 
+    def raise_if_essential_columns_missing(self, dataframe: DataFrame) -> None:
+        """Raise an error if one essential column is missing.
+
+        Parameters
+        ----------
+        dataframe : DataFrame
+            DataFrame to check.
+
+        Raises
+        ------
+        KeyError
+            If there is no date, longitude or latitude column.
+        """
+        date_in = self.date_field in dataframe.columns
+        longitude_in = self.longitude_field in dataframe.columns
+        latitude_in = self.latitude_field in dataframe.columns
+        if not (date_in and longitude_in and latitude_in):
+            msg = "One of the essential columns are missing in the dataframe."
+            raise KeyError(msg)
+
     @abstractmethod
-    def retrieve_df(self) -> DataFrame:
+    def retrieve_filtered_df(self, fields: list[str]) -> DataFrame:
+        """Retrieve Filtered DataFrame.
+
+        Parameters
+        ----------
+        fields : list[str]
+            List of fields to conserve. If empty, return the same DataFrame.
+
+        Returns
+        -------
+        DataFrame
+            Filtered DataFrame
+        """
+
+    @abstractmethod
+    def retrieve_df(self, fields: list[str]) -> DataFrame:
         """Retrieve the original DataFrame."""
 
     def retrieve_db(self, *, xs: list[str], zs: list[str]) -> Db:
@@ -43,7 +88,21 @@ class BaseLoader(ABC, Generic[T]):
         Db
             DataBase.
         """
-        source_df = self.retrieve_df()
+        fields = []
+        if isinstance(xs, str):
+            fields.append(xs)
+        else:
+            fields += xs
+        if isinstance(zs, str):
+            fields.append(zs)
+        else:
+            fields += zs
+
+        fields += [self.date_field, self.longitude_field, self.latitude_field]
+
+        fields = list(set(fields))
+
+        source_df = self.retrieve_filtered_df(fields=fields)
 
         converter = DF2Db(source=source_df)
 

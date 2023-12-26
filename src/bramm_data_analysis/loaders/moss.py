@@ -16,6 +16,27 @@ class MossLoader(BaseLoader[Path]):
     def retrieve_df(self) -> DataFrame:
         """Retrieve Moss' DataFrame."""
         moss_df = MossReader(data_path=self.source).retrieve()
+        self.raise_if_essential_columns_missing(moss_df)
+        return MossPreprocessor().preprocess(
+            unprocessed_data=moss_df,
+            inplace=False,
+        )
+
+    def retrieve_filtered_df(self, fields: list[str]) -> DataFrame:
+        """Retrieve Filtered DataFrame.
+
+        Parameters
+        ----------
+        fields : list[str]
+            List of fields to conserve. If empty, return the same DataFrame.
+
+        Returns
+        -------
+        DataFrame
+            Filtered DataFrame
+        """
+        moss_df = MossReader(data_path=self.source).retrieve_and_filter(fields)
+        self.raise_if_essential_columns_missing(moss_df)
         return MossPreprocessor().preprocess(
             unprocessed_data=moss_df,
             inplace=False,

@@ -67,6 +67,8 @@ class MossPreprocessor(Preprocessor):
         remove_lt = lambda x: x.replace("< ", "")
 
         for col in self.cols_to_set_as_float:
+            if col not in to_modify.columns:
+                continue
             to_modify[col] = to_modify[col].astype(str)
             to_modify[col] = to_modify[col].apply(replace_commas)
             to_modify[col] = to_modify[col].apply(remove_lt)
