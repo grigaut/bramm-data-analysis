@@ -19,4 +19,4 @@ class RMQSReader(BaseReader):
         DataFrame
             RMQS DataFrame.
         """
-        return pd.read_csv(self.data_path)
+        return pd.read_csv(self.data_path, na_values="ND")
