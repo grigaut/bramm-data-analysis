@@ -9,7 +9,7 @@ from pandas.core.api import DataFrame
 aggregating_dict_type = dict[str, Callable[[DataFrame], DataFrame]]
 
 
-class DuplicatesRemoval:
+class DuplicatesRemover:
 
     """Handle Duplicates."""
 
@@ -60,7 +60,9 @@ class DuplicatesRemoval:
         # copy dataframe
         to_modify = dataframe.copy()
         # Sort by Date
-        sorted_df = to_modify.sort_values(self.date_field, ascending=False)
+        sorted_df = to_modify.sort_values(
+            self.date_field, ascending=False, ignore_index=True
+        )
         # Remove
         return sorted_df.drop_duplicates(
             subset=[self.longitude_field, self.latitude_field],

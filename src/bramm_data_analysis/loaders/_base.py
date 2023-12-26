@@ -8,6 +8,9 @@ from pandas.core.api import DataFrame
 
 from bramm_data_analysis.loaders.df_to_db.converters import DF2Db
 from bramm_data_analysis.loaders.preprocessing._base import BasePreprocessor
+from bramm_data_analysis.loaders.preprocessing.duplicates import (
+    DuplicatesRemover,
+)
 from bramm_data_analysis.loaders.reading._base import BaseReader
 
 T = TypeVar("T")
@@ -39,6 +42,19 @@ class BaseLoader(ABC, Generic[T]):
         """Data Path."""
         return self._source
 
+    def _handle_duplicates(
+        self, dataframe: DataFrame, *, duplicates_handling_strategy: str | None
+    ) -> DataFrame:
+        if duplicates_handling_strategy is None:
+            return dataframe
+        duplicate_remover = DuplicatesRemover(
+            aggregating_method=duplicates_handling_strategy,
+        )
+        duplicate_remover.date_field = self.date_field
+        duplicate_remover.longitude_field = self.longitude_field
+        duplicate_remover.latitude_field = self.latitude_field
+        return duplicate_remover.process_duplicates(dataframe)
+
     def raise_if_essential_columns_missing(self, dataframe: DataFrame) -> None:
         """Raise an error if one essential column is missing.
 
@@ -59,36 +75,72 @@ class BaseLoader(ABC, Generic[T]):
             msg = "One of the essential columns are missing in the dataframe."
             raise KeyError(msg)
 
-    def retrieve_filtered_df(self, fields: list[str]) -> DataFrame:
+    def retrieve_filtered_df(
+        self,
+        fields: list[str],
+        *,
+        duplicates_handling_strategy: str | None = None,
+    ) -> DataFrame:
         """Retrieve Filtered DataFrame.
 
         Parameters
         ----------
         fields : list[str]
             List of fields to conserve. If empty, return the same DataFrame.
+        duplicates_handling_strategy: str | None
+            Aggregation method to handle duplicates.
+            If None, the duplicates will not be removed., by default None
 
         Returns
         -------
         DataFrame
             Filtered DataFrame
         """
-        datafarme = self._reader.retrieve_and_filter(fields)
-        self.raise_if_essential_columns_missing(datafarme)
-        return self._preprocessor.preprocess(
-            unprocessed_data=datafarme,
-            inplace=False,
-        )
-
-    def retrieve_df(self) -> DataFrame:
-        """Retrieve the original DataFrame."""
-        dataframe = self._reader.retrieve()
+        dataframe = self._reader.retrieve_and_filter(fields)
         self.raise_if_essential_columns_missing(dataframe)
-        return self._preprocessor.preprocess(
+        preprocessed = self._preprocessor.preprocess(
             unprocessed_data=dataframe,
             inplace=False,
         )
+        return self._handle_duplicates(
+            preprocessed,
+            duplicates_handling_strategy=duplicates_handling_strategy,
+        )
 
-    def retrieve_db(self, *, xs: list[str], zs: list[str]) -> Db:
+    def retrieve_df(
+        self, *, duplicates_handling_strategy: str | None = None
+    ) -> DataFrame:
+        """Retrieve Filtered DataFrame.
+
+        Parameters
+        ----------
+        duplicates_handling_strategy: str | None
+            Aggregation method to handle duplicates.
+            If None, the duplicates will not be removed., by default None
+
+        Returns
+        -------
+        DataFrame
+            DataFrame
+        """
+        dataframe = self._reader.retrieve()
+        self.raise_if_essential_columns_missing(dataframe)
+        preprocessed = self._preprocessor.preprocess(
+            unprocessed_data=dataframe,
+            inplace=False,
+        )
+        return self._handle_duplicates(
+            preprocessed,
+            duplicates_handling_strategy=duplicates_handling_strategy,
+        )
+
+    def retrieve_db(
+        self,
+        *,
+        xs: list[str],
+        zs: list[str],
+        duplicates_handling_strategy: str | None = None,
+    ) -> Db:
         """Retrieve the DataBase.
 
         Parameters
@@ -97,6 +149,9 @@ class BaseLoader(ABC, Generic[T]):
             X Loacator(s).
         zs : list[str]
             Z Locator(s).
+        duplicates_handling_strategy: str | None
+            Aggregation method to handle duplicates.
+            If None, the duplicates will not be removed., by default None
 
         Returns
         -------
@@ -117,7 +172,10 @@ class BaseLoader(ABC, Generic[T]):
 
         fields = list(set(fields))
 
-        source_df = self.retrieve_filtered_df(fields=fields)
+        source_df = self.retrieve_filtered_df(
+            fields=fields,
+            duplicates_handling_strategy=duplicates_handling_strategy,
+        )
 
         converter = DF2Db(source=source_df)
 
