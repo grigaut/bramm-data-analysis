@@ -4,36 +4,31 @@ from collections.abc import Callable
 from typing import ClassVar
 
 import pandas as pd
+from pandas.core.api import DataFrame
+
+aggregating_dict_type = dict[str, Callable[[DataFrame], DataFrame]]
 
 
 class DuplicatesRemoval:
 
     """Handle Duplicates."""
 
+    date_field = "date"
+    longitude_field = "longitude"
+    latitude_field = "latitude"
+
     _remove_method = "remove"
 
-    _aggregating_methods: ClassVar[dict[str, Callable]] = {
+    _aggregating_methods: ClassVar[aggregating_dict_type] = {
         "mean": lambda x: x.mean(),
         "sum": lambda x: x.sum(),
         "median": lambda x: x.median(),
         _remove_method: None,
     }
 
-    def __init__(
-        self, grouping_field: list[str], aggregating_method: str = "mean"
-    ) -> None:
+    def __init__(self, aggregating_method: str = "mean") -> None:
         """Instantiate the object."""
-        self._fields = grouping_field
         self._method = aggregating_method
-
-    @property
-    def grouping_field(self) -> list[str]:
-        """Fields by which to group the data."""
-        return self._fields
-
-    @grouping_field.setter
-    def grouping_field(self, value: list[str]) -> None:
-        self._fields = value
 
     @property
     def aggregating_method(self) -> str:
@@ -49,15 +44,59 @@ class DuplicatesRemoval:
             )
             raise KeyError(msg)
 
-    def correct_data(
+    def remove_spatial_overlap(self, dataframe: DataFrame) -> DataFrame:
+        """Remove Spatial Overlapping in a DataFrame.
+
+        Parameters
+        ----------
+        dataframe : DataFrame
+            DataFrame to modify.
+
+        Returns
+        -------
+        DataFrame
+            DataFrame without Spatial overlapping.
+        """
+        # copy dataframe
+        to_modify = dataframe.copy()
+        # Sort by Date
+        sorted_df = to_modify.sort_values(self.date_field, ascending=False)
+        # Remove
+        return sorted_df.drop_duplicates(
+            subset=[self.longitude_field, self.latitude_field],
+        )
+
+    def aggregate_samples(self, dataframe: DataFrame) -> DataFrame:
+        """Aggregate Samples taken in same space-time location.
+
+        Parameters
+        ----------
+        dataframe : DataFrame
+            DataFrame to modify.
+
+        Returns
+        -------
+        DataFrame
+            DataFrame same-location points have been aggregated.
+        """
+        # copy dataframe
+        to_modify = dataframe.copy()
+        # Group by Date, Longitude and Latitude
+        grouped_data = to_modify.groupby(
+            by=[self.date_field, self.longitude_field, self.latitude_field]
+        )
+        aggregate = self._aggregating_methods[self.aggregating_method]
+        return aggregate(grouped_data).reset_index()
+
+    def process_duplicates(
         self,
-        duplicated_data: pd.DataFrame,
+        dataframe: pd.DataFrame,
     ) -> pd.DataFrame:
         """Correct Data according to parameters.
 
         Parameters
         ----------
-        duplicated_data : pd.DataFrame
+        dataframe : pd.DataFrame
             DataFrame with potentially duplicated data.
 
         Returns
@@ -65,13 +104,5 @@ class DuplicatesRemoval:
         pd.DataFrame
             Correct DataFrame.
         """
-        to_modify = duplicated_data.copy()
-
-        if self.aggregating_method == self._remove_method:
-            return to_modify.drop_duplicates(subset=self.grouping_field)
-
-        grouped_data = to_modify.groupby(by=self.grouping_field)
-
-        aggregate = self._aggregating_methods[self.aggregating_method]
-
-        return aggregate(grouped_data).reset_index()
+        aggregated = self.aggregate_samples(dataframe=dataframe)
+        return self.remove_spatial_overlap(dataframe=aggregated)
