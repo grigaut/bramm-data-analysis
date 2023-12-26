@@ -1,33 +1,28 @@
-"""RMQS Preprocessing Tools."""
+"""Moss Preprocessing Tools."""
 
-
-from pathlib import Path
-from typing import Literal, overload
+from typing import ClassVar, Literal, overload
 
 import pandas as pd
 
-from bramm_data_analysis.preprocessing._base import Preprocessor
+from bramm_data_analysis.loaders.preprocessing._base import BasePreprocessor
 
 
-class RMQSPreprocessor(Preprocessor):
+class MossPreprocessor(BasePreprocessor):
 
-    """Preprocessor for RMQS Data."""
+    """Preprocessor for Moss Data."""
 
-    date_column_to_convert = "date_complete"
+    cols_to_set_as_float: ClassVar[list[str]] = [
+        "sodium",
+        "platinium",
+        "rhodium",
+        "antimony",
+        "strontium",
+        "vanadium",
+        "zinc",
+    ]
 
-    def __init__(self, data_path: Path) -> None:
-        """Instanciates the preprocessor."""
-        super().__init__(data_path)
-
-    def load(self) -> pd.DataFrame:
-        """Load the DataFrame.
-
-        Returns
-        -------
-        pd.DataFrame
-            Loaded Data.
-        """
-        return pd.read_csv(self._data)
+    def __init__(self) -> None:
+        """Instantiate the Preprocessor."""
 
     @overload
     def preprocess(
@@ -68,8 +63,15 @@ class RMQSPreprocessor(Preprocessor):
 
         # Correct data
 
-        date_column = to_modify[self.date_column_to_convert]
+        replace_commas = lambda x: x.replace(",", ".")
+        remove_lt = lambda x: x.replace("< ", "")
 
-        to_modify[self.date_column_to_convert] = pd.to_datetime(date_column)
+        for col in self.cols_to_set_as_float:
+            if col not in to_modify.columns:
+                continue
+            to_modify[col] = to_modify[col].astype(str)
+            to_modify[col] = to_modify[col].apply(replace_commas)
+            to_modify[col] = to_modify[col].apply(remove_lt)
+            to_modify[col].astype("float64")
 
         return None if inplace else to_modify
