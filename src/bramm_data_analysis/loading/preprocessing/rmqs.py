@@ -6,7 +6,7 @@ from typing import Literal, overload
 
 import pandas as pd
 
-from bramm_data_analysis.preprocessing._base import Preprocessor
+from bramm_data_analysis.loading.preprocessing._base import Preprocessor
 
 
 class RMQSPreprocessor(Preprocessor):

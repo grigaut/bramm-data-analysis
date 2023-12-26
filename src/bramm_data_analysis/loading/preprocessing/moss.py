@@ -6,7 +6,7 @@ from typing import ClassVar, Literal, overload
 import pandas as pd
 
 from bramm_data_analysis import loading
-from bramm_data_analysis.preprocessing._base import Preprocessor
+from bramm_data_analysis.loading.preprocessing._base import Preprocessor
 
 
 class MossPreprocessor(Preprocessor):
