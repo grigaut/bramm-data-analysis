@@ -1,7 +1,9 @@
 """Matching Tools to Match Moss Points with RMQS Points.."""
 
+from typing import Literal, overload
+
 import numpy as np
-import pandas as pd
+from pandas.core.api import DataFrame
 from sklearn.neighbors import NearestNeighbors
 
 
@@ -41,38 +43,38 @@ class Matcher:
         return self.km_threshold / self._earth_radius_km
 
     @staticmethod
-    def convert_to_radians(degree_dataframe: pd.DataFrame) -> pd.DataFrame:
+    def convert_to_radians(degree_dataframe: DataFrame) -> DataFrame:
         """Convert a DataFrame in Degree into a DataFrame in Radian.
 
         Parameters
         ----------
-        degree_dataframe : pd.DataFrame
+        degree_dataframe : DataFrame
             DataFrame whose values are all in degree.
 
         Returns
         -------
-        pd.DataFrame
+        DataFrame
             DataFrame whose values are all in radians.
         """
         return np.deg2rad(degree_dataframe)
 
     def _apply_year_threshold(
         self,
-        rmqs_data: pd.DataFrame,
+        rmqs_data: DataFrame,
         date_column: str,
-    ) -> pd.DataFrame:
+    ) -> DataFrame:
         """Apply the year threshold to the RMQS Data.
 
         Parameters
         ----------
-        rmqs_data : pd.DataFrame
+        rmqs_data : DataFrame
             RMQS Data.
         date_column : str
             Name of the column with the year informations.
 
         Returns
         -------
-        pd.DataFrame
+        DataFrame
             RMQS Data whose dates are more recent than the threshold.
         """
         dates = rmqs_data[date_column]
@@ -81,10 +83,42 @@ class Matcher:
 
         return rmqs_data[is_greater_than_threshold]
 
+    @overload
     def right_to_left(
         self,
-        left_data: pd.DataFrame,
-        right_data: pd.DataFrame,
+        left_data: DataFrame,
+        right_data: DataFrame,
+        radians: bool,
+        *,
+        left_longitude: str = ...,
+        left_latitude: str = ...,
+        right_longitude: str = ...,
+        right_latitude: str = ...,
+        suffixes: tuple[str, str] = ...,
+        leftovers: Literal[False] = ...,
+    ) -> DataFrame:
+        ...
+
+    @overload
+    def right_to_left(
+        self,
+        left_data: DataFrame,
+        right_data: DataFrame,
+        radians: bool,
+        *,
+        left_longitude: str = ...,
+        left_latitude: str = ...,
+        right_longitude: str = ...,
+        right_latitude: str = ...,
+        suffixes: tuple[str, str] = ...,
+        leftovers: Literal[True] = ...,
+    ) -> tuple[DataFrame, DataFrame]:
+        ...
+
+    def right_to_left(
+        self,
+        left_data: DataFrame,
+        right_data: DataFrame,
         radians: bool,
         *,
         left_longitude: str = "longitude",
@@ -92,14 +126,15 @@ class Matcher:
         right_longitude: str = "longitude",
         right_latitude: str = "latitude",
         suffixes: tuple[str, str] = ("_left", "_right"),
-    ) -> pd.DataFrame:
+        leftovers: bool = False,
+    ) -> DataFrame | tuple[DataFrame, DataFrame]:
         """Match a Dataframe (right) onto another one (left).
 
         Parameters
         ----------
-        left_data : pd.DataFrame
+        left_data : DataFrame
             Left DataFrame.
-        right_data : pd.DataFrame
+        right_data : DataFrame
             Right DataFrame.
         radians: bool
             Whether the provided Data is in radians or not.
@@ -113,11 +148,15 @@ class Matcher:
             Latitude column for the right DataFrame., by default "latitude"
         suffixes : tuple[str, str], optional
             Suffixes to use for merging., by default ("_left", "_right")
+        leftovers: bool, optional
+            Whether to return unused data from right dataframe or not.
+            , by default False
 
         Returns
         -------
-        pd.DataFrame
-            Matched DataFrame of right onto left.
+        DataFrame | tuple[DataFrame, DataFrame]
+            Matched DataFrame of right onto left and
+             leftovers dataframe if `leftovers` is True.
         """
         # Slice to conserve only coordinates.
         left_xy = left_data.filter([left_longitude, left_latitude])
@@ -131,61 +170,74 @@ class Matcher:
         estimator.fit(right_xy)
         distances, indexes = estimator.kneighbors(left_xy)
 
-        merged = left_data.merge(
+        is_lower_than_threshold = (distances <= self.rad_threshold).flatten()
+
+        left_data_cropped = left_data[is_lower_than_threshold]
+        indexes_cropped = indexes.flatten()[is_lower_than_threshold]
+
+        merged = left_data_cropped.merge(
             right=right_data,
-            left_on=right_data.index[indexes.flatten()],
+            left_on=right_data.index[indexes_cropped],
             right_index=True,
             suffixes=suffixes,
         )
-        merged[self.distance_column] = distances
+        if leftovers:
+            is_conserved = right_data.index.isin(indexes_cropped)
+            leftovers = right_data[~is_conserved]
+            return merged, leftovers
         return merged
 
-    def _apply_km_threshold(
+    @overload
+    def match_rmqs_to_moss(
         self,
-        matched_data: pd.DataFrame,
-        distance_column: str,
-    ) -> pd.DataFrame:
-        """Apply distance threshold after matching.
+        moss_data: DataFrame,
+        rmqs_data: DataFrame,
+        radians: bool = ...,
+        *,
+        moss_longitude: str = ...,
+        moss_latitude: str = ...,
+        rmqs_longitude: str = ...,
+        rmqs_latitude: str = ...,
+        leftovers: Literal[True],
+    ) -> tuple[DataFrame, DataFrame]:
+        ...
 
-        Parameters
-        ----------
-        matched_data : pd.DataFrame
-            Matched data.
-        distance_column : str
-            Maximum distance threshold.
-
-        Returns
-        -------
-        pd.DataFrame
-            Data whose distance is smaller than the threshold.
-            (Distance column is removed afterward).
-        """
-        distances = matched_data.pop(distance_column)
-
-        is_lower_than_threshold = distances <= self.rad_threshold
-
-        return matched_data[is_lower_than_threshold]
+    @overload
+    def match_rmqs_to_moss(
+        self,
+        moss_data: DataFrame,
+        rmqs_data: DataFrame,
+        radians: bool = ...,
+        *,
+        moss_longitude: str = ...,
+        moss_latitude: str = ...,
+        rmqs_longitude: str = ...,
+        rmqs_latitude: str = ...,
+        leftovers: Literal[False],
+    ) -> DataFrame:
+        ...
 
     def match_rmqs_to_moss(
         self,
-        moss_data: pd.DataFrame,
-        rmqs_data: pd.DataFrame,
+        moss_data: DataFrame,
+        rmqs_data: DataFrame,
         radians: bool = False,
         *,
         moss_longitude: str = "longitude",
         moss_latitude: str = "latitude",
         rmqs_longitude: str = "longitude",
         rmqs_latitude: str = "latitude",
-    ) -> pd.DataFrame:
+        leftovers: bool = False,
+    ) -> tuple[DataFrame, DataFrame] | DataFrame:
         """Match RMQS to Moss Data.
 
         Final Output will have as many rows as Moss DataFrame.
 
         Parameters
         ----------
-        moss_data : pd.DataFrame
+        moss_data : DataFrame
             DataFrame containing Moss Data.
-        rmqs_data : pd.DataFrame
+        rmqs_data : DataFrame
             DataFrame containing RMQS Data.
         radians: bool
             Whether the provided Data is in radians or not.by default False
@@ -197,18 +249,22 @@ class Matcher:
             Label for longitude in RMQS DataFrame., by default "longitude"
         rmqs_latitude : str, optional
             Label for latitude in RMQS DataFrame., by default "latitude"
+        leftovers: bool, optional
+            Whether to return unused data from right dataframe or not.
+            , by default False
 
         Returns
         -------
-        pd.DataFrame
-            Concatenation of Matched RMQS Data with Moss Data.
+        DataFrame | tuple[DataFrame, DataFrame]
+            Matched DataFrame of right onto left and
+             leftovers dataframe if `leftovers` is True.
         """
         rmqs_sliced = self._apply_year_threshold(
             rmqs_data=rmqs_data,
             date_column=self.rmqs_date_column,
         )
 
-        matched = self.right_to_left(
+        return self.right_to_left(
             left_data=moss_data,
             right_data=rmqs_sliced,
             radians=radians,
@@ -217,33 +273,60 @@ class Matcher:
             right_longitude=rmqs_longitude,
             right_latitude=rmqs_latitude,
             suffixes=(self.moss_suffix, self.rmqs_suffix),
+            leftovers=leftovers,
         )
 
-        return self._apply_km_threshold(
-            matched_data=matched,
-            distance_column=self.distance_column,
-        )
+    @overload
+    def match_moss_to_rmqs(
+        self,
+        moss_data: DataFrame,
+        rmqs_data: DataFrame,
+        radians: bool = ...,
+        *,
+        moss_longitude: str = ...,
+        moss_latitude: str = ...,
+        rmqs_longitude: str = ...,
+        rmqs_latitude: str = ...,
+        leftovers: Literal[True],
+    ) -> tuple[DataFrame, DataFrame]:
+        ...
+
+    @overload
+    def match_moss_to_rmqs(
+        self,
+        moss_data: DataFrame,
+        rmqs_data: DataFrame,
+        radians: bool = ...,
+        *,
+        moss_longitude: str = ...,
+        moss_latitude: str = ...,
+        rmqs_longitude: str = ...,
+        rmqs_latitude: str = ...,
+        leftovers: Literal[False],
+    ) -> DataFrame:
+        ...
 
     def match_moss_to_rmqs(
         self,
-        moss_data: pd.DataFrame,
-        rmqs_data: pd.DataFrame,
+        moss_data: DataFrame,
+        rmqs_data: DataFrame,
         radians: bool = True,
         *,
         moss_longitude: str = "longitude",
         moss_latitude: str = "latitude",
         rmqs_longitude: str = "longitude",
         rmqs_latitude: str = "latitude",
-    ) -> pd.DataFrame:
+        leftovers: bool = False,
+    ) -> tuple[DataFrame, DataFrame] | DataFrame:
         """Match Moss to RMQS Data.
 
         Final Output will have as many rows as RMQS DataFrame.
 
         Parameters
         ----------
-        moss_data : pd.DataFrame
+        moss_data : DataFrame
             DataFrame containing Moss Data.
-        rmqs_data : pd.DataFrame
+        rmqs_data : DataFrame
             DataFrame containing RMQS Data.
         radians: bool
             Whether the provided Data is in radians or not.by default False
@@ -255,18 +338,22 @@ class Matcher:
             Label for longitude in RMQS DataFrame., by default "longitude"
         rmqs_latitude : str, optional
             Label for latitude in RMQS DataFrame., by default "latitude"
+        leftovers: bool, optional
+            Whether to return unused data from right dataframe or not.
+            , by default False
 
         Returns
         -------
-        pd.DataFrame
-            Concatenation of Matched Moss Data with RMQS Data.
+        DataFrame | tuple[DataFrame, DataFrame]
+            Matched DataFrame of right onto left and
+             leftovers dataframe if `leftovers` is True.
         """
         rmqs_sliced = self._apply_year_threshold(
             rmqs_data=rmqs_data,
             date_column=self.rmqs_date_column,
         )
 
-        matched = self.right_to_left(
+        return self.right_to_left(
             right_data=moss_data,
             left_data=rmqs_sliced,
             radians=radians,
@@ -275,9 +362,5 @@ class Matcher:
             left_longitude=rmqs_longitude,
             left_latitude=rmqs_latitude,
             suffixes=(self.moss_suffix, self.rmqs_suffix),
-        )
-
-        return self._apply_km_threshold(
-            matched_data=matched,
-            distance_column=self.distance_column,
+            leftovers=leftovers,
         )
