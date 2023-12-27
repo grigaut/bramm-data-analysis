@@ -7,7 +7,7 @@ from bramm_data_analysis.loaders.rmqs import RMQSLoader
 
 
 def from_moss_csv(data_path: Path) -> MossLoader:
-    """Load DataBase from Moss CSV file.
+    """Retrieve Loader for Moss Data.
 
     Parameters
     ----------
@@ -16,14 +16,14 @@ def from_moss_csv(data_path: Path) -> MossLoader:
 
     Returns
     -------
-    RMQSLoader
-    Loader for Moss Data.
+    MossLoader
+        Loader for Moss Data.
     """
     return MossLoader(source=data_path)
 
 
 def from_rmqs_csv(data_path: Path) -> RMQSLoader:
-    """Load DataBase from RMQS CSV file.
+    """Retrieve Loader for RMQS Data.
 
     Parameters
     ----------
