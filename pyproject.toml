@@ -21,6 +21,7 @@ pykrige = "^1.7.1"
 gstlearn = "^1.0.0"
 requests = "^2.31.0"
 gstools = "^1.5.1"
+shapely = "^2.0.2"
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "*"}

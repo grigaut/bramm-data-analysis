@@ -3,7 +3,9 @@
 import numpy as np
 import pandas as pd
 
-from bramm_data_analysis.preprocessing.outliers.thresholds import Threshold
+from bramm_data_analysis.loaders.preprocessing.outliers.thresholds import (
+    Threshold,
+)
 
 
 class OutlierRemoval:

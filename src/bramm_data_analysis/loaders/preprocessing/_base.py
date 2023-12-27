@@ -1,22 +1,14 @@
 """BAse Tools for preprocessing."""
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Literal, overload
 
 import pandas as pd
 
 
-class Preprocessor(ABC):
+class BasePreprocessor(ABC):
 
     """Preprocessing base class."""
-
-    def __init__(self, data_path: Path) -> None:
-        self._data = data_path
-
-    @abstractmethod
-    def load(self) -> pd.DataFrame:
-        """Load the data."""
 
     @overload
     def preprocess(
@@ -57,13 +49,3 @@ class Preprocessor(ABC):
         pd.DataFrame or None
             Processed DataFrame if inplace is False.
         """
-
-    def load_preprocess(self) -> pd.DataFrame:
-        """Load and Process the data.
-
-        Returns
-        -------
-        pd.DataFrame
-            Processed DataFrame.
-        """
-        return self.preprocess(unprocessed_data=self.load(), inplace=False)
