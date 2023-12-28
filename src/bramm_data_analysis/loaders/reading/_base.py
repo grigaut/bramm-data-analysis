@@ -74,6 +74,7 @@ class BaseReader(ABC):
             df_columns=dataframe.columns,
             fields=fields,
         )
+        # Filter Columns
         return dataframe.filter(fields)
 
     def retrieve_and_filter(self, fields: list[str]) -> DataFrame:

@@ -158,14 +158,16 @@ class MossReader(BaseReader):
         DataFrame
             Merged DataFrame.
         """
+        # Load each important sheet from the Excel File
         sites_data = self.load_sites()
         samples_data = self.load_samples()
         values_data = self.load_values()
-
+        # Merge sites with samples on site_id
         sites_with_samples = sites_data.merge(
             right=samples_data,
             on=self.merge_sites_with_samples_on,
         )
+        # Merge sites/sample with values based on sample_id
         return sites_with_samples.merge(
             right=values_data,
             on=self.merge_sites_samples_with_values_on,

@@ -38,10 +38,11 @@ class DF2Db:
             If the Column is not composed of floats or contains nans.
         """
         column = self.source[column_name]
+        # Assert Column is composed of floats
         if column.dtype != "float64":
             msg = f"The column {column_name} must contain only floats."
             raise ValueError(msg)
-
+        # Assert Column has no nans
         if column.isna().any():
             msg = f"The column {column_name} contains NaNs."
             raise ValueError(msg)
@@ -62,6 +63,7 @@ class DF2Db:
             Sliced copy of source.
         """
         slice_components = []
+        # Check all fields
         if isinstance(xs, str):
             self.raise_if_unsuitable(xs)
             slice_components.append(xs)
@@ -76,6 +78,7 @@ class DF2Db:
             for z in zs:
                 self.raise_if_unsuitable(z)
             slice_components += zs
+        # Return filtered DataFrame
         return self.source.filter(slice_components).copy()
 
     def retrieve_db(self, xs: list[str] | str, zs: list[str] | str) -> Db:
@@ -93,8 +96,11 @@ class DF2Db:
         Db
             DataBase.
         """
+        # Slice DataFrame
         sliced_source = self.slice_df(xs=xs, zs=zs)
+        # Convert to DataFrame
         database = gl.Db_fromPanda(sliced_source)
+        # Set locator(s)
         if isinstance(xs, str):
             database.setLocator(xs, gl.ELoc.X)
         else:

@@ -6,7 +6,6 @@ from bramm_data_analysis.loaders.preprocessing.outliers.thresholds import (
     ValueThreshold,
 )
 from bramm_data_analysis.loaders.preprocessing.rmqs import RMQSPreprocessor
-from bramm_data_analysis.loaders.preprocessing.scaler import Scaler
 
 from .outliers.outliers_removal import (
     OutlierRemoval,
@@ -15,7 +14,6 @@ from .outliers.outliers_removal import (
 __all__ = [
     "MossPreprocessor",
     "RMQSPreprocessor",
-    "Scaler",
     "OutlierRemoval",
     "ValueThreshold",
     "QuantileThreshold",

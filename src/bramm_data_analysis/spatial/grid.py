@@ -50,6 +50,7 @@ class RegularGrid:
         rmax_lon = self.boundary.lon_rmax
         rmin_lat = self.boundary.lat_rmin
         rmax_lat = self.boundary.lat_rmax
+        # Create DbGrid over entire area
         grid: DbGrid = gl.DbGrid.create(
             x0=[rmin_lon, rmin_lat],
             dx=[step, step],
@@ -75,29 +76,16 @@ class RegularGrid:
         DbGrid
             DbGrid with selection zone.
         """
+        # Make GeoPandas geometry from grid points.
         geometry = gpd.points_from_xy(
             x=full_grid[self.x_field],
             y=full_grid[self.y_field],
         )
+        # Check whether points are inside the boundary or not
         full_grid[self.insider_field] = geometry.within(self._boundary.polygon)
+        # Define as selection
         full_grid.setLocator(self.insider_field, gl.ELoc.SEL)
         return full_grid
-
-    def _divise_area(self, step: float) -> DbGrid:
-        """Compute points within the boundary separated by a given spacing.
-
-        Parameters
-        ----------
-        step : float
-            Spacing between consecutive points.
-
-        Returns
-        -------
-        DbGrid
-            DbGrid containing all points within the boundary.
-        """
-        full_grid = self._mesh(step=step)
-        return self._filter(full_grid=full_grid)
 
     def retrieve_grid(self, step: float) -> DbGrid:
         """Retrieve points within the boundary separated by a given spacing.
@@ -131,6 +119,7 @@ class RegularGrid:
         Self
             RegularGrid
         """
+        # Create regularGrid from geojson path instead of Boundary object
         return cls(
             boundary=Boundary(boundary_geojson_path=boundary_geojson_path),
         )

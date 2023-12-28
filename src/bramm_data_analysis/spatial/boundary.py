@@ -28,8 +28,11 @@ class Boundary:
 
     @polygon.setter
     def polygon(self, boundary_geojson_path: Path) -> None:
+        # Load GeoJson
         geojson_geometry_bins = json.load(boundary_geojson_path.open("rb"))
+        # Transform to shapely's shape
         self._polygon = shape(geojson_geometry_bins["geometry"])
+        # Set polygon bounds
         self.bounds = self._polygon.bounds
 
     @property
