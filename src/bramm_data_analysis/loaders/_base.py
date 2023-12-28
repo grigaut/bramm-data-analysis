@@ -159,6 +159,7 @@ class BaseLoader(ABC, Generic[T]):
         xs: list[str],
         zs: list[str],
         duplicates_handling_strategy: str | None = None,
+        thresholds: list[Threshold] | None = None,
     ) -> Db:
         """Retrieve the DataBase.
 
@@ -171,6 +172,9 @@ class BaseLoader(ABC, Generic[T]):
         duplicates_handling_strategy: str | None
             Aggregation method to handle duplicates.
             If None, the duplicates will not be removed., by default None
+        thresholds : list[Threshold] | None, optional
+            Thresholds to satisfy for the data.
+              If None, no threshold selection is made., by default None
 
         Returns
         -------
@@ -194,6 +198,7 @@ class BaseLoader(ABC, Generic[T]):
         source_df = self.retrieve_filtered_df(
             fields=fields,
             duplicates_handling_strategy=duplicates_handling_strategy,
+            thresholds=thresholds,
         )
 
         converter = DF2Db(source=source_df)
