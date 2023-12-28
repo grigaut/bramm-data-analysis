@@ -20,5 +20,7 @@ class MossLoader(BaseLoader[Path]):
             Source object.
         """
         super().__init__(source=source)
+        # Instantiate Reader with MossReader
         self._reader = MossReader(data_path=self.source)
+        # Instantiate Preprocessor wit MossPreprocessor
         self._preprocessor = MossPreprocessor()

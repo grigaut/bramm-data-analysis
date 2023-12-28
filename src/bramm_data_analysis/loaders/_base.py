@@ -49,14 +49,32 @@ class BaseLoader(ABC, Generic[T]):
     def _handle_duplicates(
         self, dataframe: DataFrame, *, duplicates_handling_strategy: str | None
     ) -> DataFrame:
+        """Remove Duplicated rows.
+
+        Parameters
+        ----------
+        dataframe : DataFrame
+            DataFrame containing duplicates.
+        duplicates_handling_strategy : str | None
+            Strategy to follow to aggregate duplicates.
+
+        Returns
+        -------
+        DataFrame
+            DataFrame without duplicates if strategy is not None
+            , else same DataFrame.
+        """
         if duplicates_handling_strategy is None:
             return dataframe
+        # Create Duplicate Remover
         duplicate_remover = DuplicatesRemover(
             aggregating_method=duplicates_handling_strategy,
         )
+        # Modify fields to match dataframe's
         duplicate_remover.date_field = self.date_field
         duplicate_remover.longitude_field = self.longitude_field
         duplicate_remover.latitude_field = self.latitude_field
+        # Process duplicates
         return duplicate_remover.process_duplicates(dataframe)
 
     def raise_if_essential_columns_missing(self, dataframe: DataFrame) -> None:
@@ -104,23 +122,28 @@ class BaseLoader(ABC, Generic[T]):
         DataFrame
             Filtered DataFrame
         """
+        # Retrieve filtered df
         dataframe = self._reader.retrieve_and_filter(fields)
         self.raise_if_essential_columns_missing(dataframe)
+        # Preprocess Data
         preprocessed = self._preprocessor.preprocess(
             unprocessed_data=dataframe,
             inplace=False,
         )
         if thresholds is None:
+            # Handle Dulicates
             return self._handle_duplicates(
                 preprocessed,
                 duplicates_handling_strategy=duplicates_handling_strategy,
             )
+        # Check Thresholds
         verify_threshold = np.full(
             fill_value=True,
             shape=(preprocessed.shape[0],),
         )
         for threshold in thresholds:
             verify_threshold &= threshold.check_threshold(preprocessed)
+        # Handle Dulicates
         return self._handle_duplicates(
             preprocessed[verify_threshold],
             duplicates_handling_strategy=duplicates_handling_strategy,
@@ -142,12 +165,15 @@ class BaseLoader(ABC, Generic[T]):
         DataFrame
             DataFrame
         """
+        # Retrieve unfiltered DF
         dataframe = self._reader.retrieve()
         self.raise_if_essential_columns_missing(dataframe)
+        # Preprocess Data
         preprocessed = self._preprocessor.preprocess(
             unprocessed_data=dataframe,
             inplace=False,
         )
+        # remove Duplicates
         return self._handle_duplicates(
             preprocessed,
             duplicates_handling_strategy=duplicates_handling_strategy,
@@ -181,6 +207,7 @@ class BaseLoader(ABC, Generic[T]):
         Db
             DataBase.
         """
+        # Parse fields to filter
         fields = []
         if isinstance(xs, str):
             fields.append(xs)
@@ -195,12 +222,13 @@ class BaseLoader(ABC, Generic[T]):
 
         fields = list(set(fields))
 
+        # Retrieve filtered df containing only useful fields
         source_df = self.retrieve_filtered_df(
             fields=fields,
             duplicates_handling_strategy=duplicates_handling_strategy,
             thresholds=thresholds,
         )
 
+        # Convert DataFrame to Db
         converter = DF2Db(source=source_df)
-
         return converter.retrieve_db(xs=xs, zs=zs)

@@ -22,5 +22,7 @@ class RMQSLoader(BaseLoader[Path]):
             Source object.
         """
         super().__init__(source=source)
+        # Instantiate Reader with RMQSReader
         self._reader = RMQSReader(data_path=self.source)
+        # Instantiate Preprocessor wit RMQSPreprocessor
         self._preprocessor = RMQSPreprocessor()
