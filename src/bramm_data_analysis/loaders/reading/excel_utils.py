@@ -73,9 +73,11 @@ class ExcelReader:
         DataFrame
             Dataframe with correct names.
         """
+        # Load Data from Excel File
         raw_dataframe = pd.read_excel(
             io=data_path,
             sheet_name=self.sheet_name,
             skiprows=self.skiprows,
         )
+        # Rename Columns as instructed
         return raw_dataframe.rename(columns=self.columns_mapping)
