@@ -31,3 +31,7 @@ L'ordre conseillé pour les parcourir est le suivant :
 - [kriging.ipynb](notebooks/kriging.ipynb "Krigeage Uni-Variable")
 - [rmqs_moss_kriging.ipynb](notebooks/rmqs_moss_kriging.ipynb "CoKrigeage sur les données de mousse et RMQS")
 - ([spatial_division](notebooks/spatial_division.ipynb "Détail de la génération de grilles pour le krigeage"), éventuellement, mais pas fondamentalement utile)
+
+## Code
+
+Les divers fonctions et objets définis dans cet projet se situent dans le dossier `src/bramm_data_analysis`.
