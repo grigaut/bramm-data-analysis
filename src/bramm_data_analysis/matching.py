@@ -29,8 +29,7 @@ class Matcher:
         Parameters
         ----------
         year_threshold : int, optional
-            Date Threshold to verify for RMQS data.,
-            by default datetime(2000, 1, 1, tzinfo=UTC)
+            Date Threshold to verify for RMQS data., by default 2000
         km_threshold : float, optional
             Maximum accepted distance for closest point in km., by default 1
         """
@@ -170,11 +169,13 @@ class Matcher:
         estimator.fit(right_xy)
         distances, indexes = estimator.kneighbors(left_xy)
 
+        # Verify Distance Threshold
         is_lower_than_threshold = (distances <= self.rad_threshold).flatten()
-
+        # Conserve points matching threshold
         left_data_cropped = left_data[is_lower_than_threshold]
         indexes_cropped = indexes.flatten()[is_lower_than_threshold]
 
+        # Merge left data to right data based on indexes.
         merged = left_data_cropped.merge(
             right=right_data,
             left_on=right_data.index[indexes_cropped],
@@ -183,6 +184,7 @@ class Matcher:
         )
         if leftovers:
             is_conserved = right_data.index.isin(indexes_cropped)
+            # Extract unmerged points to return as leftovers
             leftovers = right_data[~is_conserved]
             return merged, leftovers
         return merged
@@ -263,7 +265,7 @@ class Matcher:
             rmqs_data=rmqs_data,
             date_column=self.rmqs_date_column,
         )
-
+        # Perform right to left match with moss as left and rmqs as right
         return self.right_to_left(
             left_data=moss_data,
             right_data=rmqs_sliced,
@@ -352,7 +354,7 @@ class Matcher:
             rmqs_data=rmqs_data,
             date_column=self.rmqs_date_column,
         )
-
+        # Perform right to left match with rmqs as left and rmqs as left
         return self.right_to_left(
             right_data=moss_data,
             left_data=rmqs_sliced,
