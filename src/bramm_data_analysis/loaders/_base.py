@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
+import numpy as np
 from gstlearn import Db
 from pandas.core.api import DataFrame
 
@@ -10,6 +11,9 @@ from bramm_data_analysis.loaders.df_to_db.converters import DF2Db
 from bramm_data_analysis.loaders.preprocessing._base import BasePreprocessor
 from bramm_data_analysis.loaders.preprocessing.duplicates import (
     DuplicatesRemover,
+)
+from bramm_data_analysis.loaders.preprocessing.outliers.thresholds import (
+    Threshold,
 )
 from bramm_data_analysis.loaders.reading._base import BaseReader
 
@@ -80,6 +84,7 @@ class BaseLoader(ABC, Generic[T]):
         fields: list[str],
         *,
         duplicates_handling_strategy: str | None = None,
+        thresholds: list[Threshold] | None = None,
     ) -> DataFrame:
         """Retrieve Filtered DataFrame.
 
@@ -87,9 +92,12 @@ class BaseLoader(ABC, Generic[T]):
         ----------
         fields : list[str]
             List of fields to conserve. If empty, return the same DataFrame.
-        duplicates_handling_strategy: str | None
+        duplicates_handling_strategy : str | None, optional
             Aggregation method to handle duplicates.
             If None, the duplicates will not be removed., by default None
+        thresholds : list[Threshold] | None, optional
+            Thresholds to satisfy for the data.
+              If None, no threshold selection is made., by default None
 
         Returns
         -------
@@ -102,8 +110,19 @@ class BaseLoader(ABC, Generic[T]):
             unprocessed_data=dataframe,
             inplace=False,
         )
+        if thresholds is None:
+            return self._handle_duplicates(
+                preprocessed,
+                duplicates_handling_strategy=duplicates_handling_strategy,
+            )
+        verify_threshold = np.full(
+            fill_value=True,
+            shape=(preprocessed.shape[0],),
+        )
+        for threshold in thresholds:
+            verify_threshold &= threshold.check_threshold(preprocessed)
         return self._handle_duplicates(
-            preprocessed,
+            preprocessed[verify_threshold],
             duplicates_handling_strategy=duplicates_handling_strategy,
         )
 
